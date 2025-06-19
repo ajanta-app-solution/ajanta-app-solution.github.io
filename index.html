@@ -1,0 +1,406 @@
+<script type="text/javascript">
+        var gk_isXlsx = false;
+        var gk_xlsxFileLookup = {};
+        var gk_fileData = {};
+        function filledCell(cell) {
+          return cell !== '' && cell != null;
+        }
+        function loadFileData(filename) {
+        if (gk_isXlsx && gk_xlsxFileLookup[filename]) {
+            try {
+                var workbook = XLSX.read(gk_fileData[filename], { type: 'base64' });
+                var firstSheetName = workbook.SheetNames[0];
+                var worksheet = workbook.Sheets[firstSheetName];
+
+                // Convert sheet to JSON to filter blank rows
+                var jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1, blankrows: false, defval: '' });
+                // Filter out blank rows (rows where all cells are empty, null, or undefined)
+                var filteredData = jsonData.filter(row => row.some(filledCell));
+
+                // Heuristic to find the header row by ignoring rows with fewer filled cells than the next row
+                var headerRowIndex = filteredData.findIndex((row, index) =>
+                  row.filter(filledCell).length >= filteredData[index + 1]?.filter(filledCell).length
+                );
+                // Fallback
+                if (headerRowIndex === -1 || headerRowIndex > 25) {
+                  headerRowIndex = 0;
+                }
+
+                // Convert filtered JSON back to CSV
+                var csv = XLSX.utils.aoa_to_sheet(filteredData.slice(headerRowIndex)); // Create a new sheet from filtered array of arrays
+                csv = XLSX.utils.sheet_to_csv(csv, { header: 1 });
+                return csv;
+            } catch (e) {
+                console.error(e);
+                return "";
+            }
+        }
+        return gk_fileData[filename] || "";
+        }
+        </script><!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajanta App Solution</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: Arial, sans-serif;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: #f3f4f6;
+            color: #1f2937;
+        }
+
+        /* Navbar */
+        nav {
+            background-color: #111827;
+            color: #ffffff;
+            position: fixed;
+            width: 100%;
+            z-index: 1000;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            padding: 16px 0;
+        }
+
+        nav .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+            display: flex;
+            justify-content: flex-end;
+        }
+
+        nav ul {
+            display: flex;
+            list-style: none;
+            gap: 24px;
+        }
+
+        nav ul li a {
+            color: #ffffff;
+            text-decoration: none;
+            padding: 8px 12px;
+            font-size: 14px;
+            transition: background-color 0.3s;
+            border-radius: 4px;
+        }
+
+        nav ul li a:hover {
+            background-color: #374151;
+        }
+
+        /* Sections */
+        section {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 80px 20px;
+            padding-top: 80px; /* Adjusted for fixed navbar */
+        }
+
+        .hero {
+            background: linear-gradient(to right, #4b6cb7, #182848);
+            color: #ffffff;
+        }
+
+        .section-bg {
+            background: linear-gradient(to bottom, #ffffff, #f3f4f6);
+        }
+
+        .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        .content-card {
+            background: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+            padding: 32px;
+            max-width: 896px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .content-card h1, .content-card h2 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            color: #1f2937;
+            margin-bottom: 24px;
+        }
+
+        .content-card p {
+            font-size: 1.125rem;
+            line-height: 1.75;
+            color: #4b5563;
+            margin-bottom: 24px;
+        }
+
+        .content-card h3 {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+            margin: 24px 0 12px;
+        }
+
+        .content-card ul {
+            list-style: disc;
+            margin-left: 16px;
+            text-align: left;
+            font-size: 1.125rem;
+            color: #4b5563;
+            margin-bottom: 24px;
+        }
+
+        .content-card ul li {
+            margin-bottom: 8px;
+        }
+
+        .content-card a {
+            color: #2563eb;
+            text-decoration: none;
+        }
+
+        .content-card a:hover {
+            text-decoration: underline;
+        }
+
+        /* Home Section Specific */
+        #home .container {
+            text-align: center;
+            max-width: 896px;
+        }
+
+        #home h1 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        #home h2 {
+            font-size: 2.25rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+        }
+
+        #home p {
+            font-size: 1.125rem;
+            line-height: 1.75;
+            max-width: 640px;
+            margin: 0 auto;
+        }
+
+        /* Contact Section */
+        .contact-info {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            font-size: 1.125rem;
+            color: #4b5563;
+        }
+
+        .contact-info div {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .contact-info span {
+            font-weight: 600;
+            color: #1f2937;
+        }
+
+        /* Footer */
+        footer {
+            background-color: #111827;
+            color: #ffffff;
+            padding: 24px 0;
+            text-align: center;
+        }
+
+        footer .container {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 0 16px;
+        }
+
+        footer p {
+            font-size: 0.875rem;
+        }
+
+        /* Responsive Design */
+        @media (min-width: 768px) {
+            nav ul li a {
+                font-size: 16px;
+            }
+
+            .content-card {
+                padding: 48px;
+            }
+
+            #home h1, #home h2 {
+                font-size: 3.75rem;
+            }
+
+            .content-card h2 {
+                font-size: 2.5rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            nav ul {
+                gap: 16px;
+            }
+
+            #home h1, #home h2 {
+                font-size: 2rem;
+            }
+
+            .content-card h2 {
+                font-size: 1.875rem;
+            }
+
+            .content-card p, .content-card ul {
+                font-size: 1rem;
+            }
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- Navbar -->
+    <nav>
+        <div class="container">
+            <ul>
+                <li><a href="#home" class="nav-link">Home</a></li>
+                <li><a href="#about" class="nav-link">About</a></li>
+                <li><a href="#contact" class="nav-link">Contact Us</a></li>
+                <li><a href="#privacy" class="nav-link">Privacy Policy</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <!-- Home Section -->
+    <section id="home" class="hero">
+        <div class="container">
+            <h1>Welcome</h1>
+            <h2>Ajanta App Solution</h2>
+            <p>Innovative app solutions for your business needs.a leading mobile app development company specializing in Android, and cross-platform applications.</p>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="about" class="section-bg">
+        <div class="container">
+            <div class="content-card">
+                <h2>About Us</h2>
+                <p>Ajanta App Solution . We specialized  in creating custom,scalable,secure,and user-friendly mobile apps tailored to you business needs.<br> a passionat team of mobile app developers helping businsses turn ideas into reality since 2020.<br><h3>Why Choose Us ?</h3><br> <br>
+                Fast development.<br> <br>Affordable Pricing.<br> <br>Latest Technologies.<br> <br>Free Consultation.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="section-bg">
+        <div class="container">
+            <div class="content-card">
+                <h2>Contact Us</h2>
+                <p>Reach out to us for any inquiries!</p>
+                <div class="contact-info">
+                    <div>
+                        <span>Email:</span>
+                        <a>tofiqsattar7@gmail.com</a>
+                    </div>
+                
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy Policy Section -->
+    <section id="privacy" class="section-bg">
+        <div class="container">
+            <div class="content-card" style="max-width: 1024px; text-align: left;">
+                <h2 style="text-align: center;">Privacy Policy</h2>
+                <p>Welcome to Ajanta App Solution, we respect your privacy and are committed to transparency. This Privacy Policy explains how we handle information when you visit our website.</p>
+
+                <h3>1. No Data Collection</h3>
+                <p>We do not collect, store, or process any personal or non-personal data from visitors to our website. This includes:</p>
+                <ul>
+                    <li>No names, emails, phone numbers, or contact details.</li>
+                    <li>No cookies, tracking technologies, or analytics tools.</li>
+                    <li>No IP address logging or browser fingerprinting.</li>
+                </ul>
+
+                <h3>2. No Third-Party Sharing</h3>
+                <p>Since we do not collect any data, we do not share any information with third parties, advertisers, or service providers.</p>
+
+                <h3>3. External Links</h3>
+                <p>Our website may contain links to other websites. We are not responsible for the privacy practices of those sites.</p>
+
+                <h3>4. Changes to This Policy</h3>
+                <p>If we ever update our data practices, we will revise this policy and notify users.</p>
+
+                <h3>5. Contact Us</h3>
+                <p>If you have any questions about this Privacy Policy, please contact us at:</p>
+                <ul>
+                    <li>Gmail:tofiqsattar7@gmail.com</a></li>
+                </ul>
+
+                <p style="text-align: center; margin-top: 24px;">Thank you for visiting Ajanta App Solution!</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>© 2025 Ajanta App Solution. All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script>
+        // Navigation logic
+        const sections = document.querySelectorAll('section');
+        const navLinks = document.querySelectorAll('.nav-link');
+
+        function showSection(targetId) {
+            sections.forEach(section => {
+                section.classList.add('hidden');
+            });
+            const targetSection = document.getElementById(targetId);
+            if (targetSection) {
+                targetSection.classList.remove('hidden');
+                window.scrollTo({ top: targetSection.offsetTop - 80, behavior: 'smooth' });
+            } else {
+                console.error(`Section with ID ${targetId} not found`);
+            }
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetId = link.getAttribute('href').substring(1);
+                showSection(targetId);
+            });
+        });
+
+        // Show home section by default
+        showSection('home');
+    </script>
+</body>
+</html>
